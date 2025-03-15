@@ -9,7 +9,23 @@ void RotaryLib::begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw) {
   rot_val = 0;
   rot_min = 0;
   rot_max = 0;
-  rot_val_tol = VAL_DIVIDER / 2;
+  switch(ROT_SPEEDER) {
+    case 0:
+      rot_val_tol = 0;
+      rot_shift = 0;
+      rot_divider = 1;
+      break;
+    case 1:
+      rot_val_tol = 1;
+      rot_shift = 1;
+      rot_divider = 2;
+      break;
+    default:
+      rot_val_tol = 2;
+      rot_shift = 2;
+      rot_divider = 4;
+      break;
+  }
   dir_cnt_l = 0;
   dir_cnt_h = 0;
   read();
@@ -53,8 +69,8 @@ void RotaryLib::read() {
       (raw_val_old == 2 && raw_val == 0) 
     ) {
       dir_cnt_h++;
-      if (rot_val < (rot_max + VAL_DIVIDER / 2)) rot_val++;
-      if (((rot_val + rot_val_tol) % VAL_DIVIDER) == 0 ) {
+      if (rot_val < (rot_max + rot_val_tol)) rot_val++;
+      if (((rot_val + rot_val_tol) % rot_divider) == 0 ) {
         if (rot_val != rot_val_old && dir_cnt_h > dir_cnt_l) set_val_changed();
         reset_dir_cnt();
       }
@@ -68,7 +84,7 @@ void RotaryLib::read() {
     ) {  
       dir_cnt_l++;
       if (rot_val > rot_min) rot_val--;
-      if (((rot_val + rot_val_tol) % VAL_DIVIDER) == 0 ) {
+      if (((rot_val + rot_val_tol) % rot_divider) == 0 ) {
         if (rot_val != rot_val_old && dir_cnt_l > dir_cnt_h) set_val_changed();
         reset_dir_cnt();
       }
@@ -101,24 +117,30 @@ void RotaryLib::read() {
       }
     }
   }
-//  Serial.print("read ");
-//  Serial.println(valChanged);
 }
 
 uint16_t RotaryLib::val() {
-  return (rot_val - rot_val_tol) / VAL_DIVIDER;
+  return rot_val >> rot_shift;
+}
+
+uint16_t RotaryLib::min() {
+  return rot_min >> rot_shift;
+}
+
+uint16_t RotaryLib::max() {
+  return rot_max >> rot_shift;
 }
 
 void RotaryLib::set_max(uint16_t _max) {
-  rot_max = _max * VAL_DIVIDER;
+  rot_max = _max << rot_shift;
 }
 
 void RotaryLib::set_min(uint16_t _min) {
-  rot_min = _min * VAL_DIVIDER;
+  rot_min = _min << rot_shift;
 }
 
 void RotaryLib::set_val(uint16_t _val) {
-  rot_val = _val * VAL_DIVIDER;
+  rot_val = _val << rot_shift;
 }
 
 uint8_t RotaryLib::buttonState() {
@@ -146,23 +168,6 @@ void RotaryLibMulti::begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw) {
   p_app_initial->max_lev = 0;
   p_app_initial->p_app_next = NULL;
   p_app_current = p_app_initial;
-  app_cur = 0;
-  lev_cur = 0;
-}
-
-void RotaryLibMulti::set_max(uint16_t _max){
-  p_lev_current->max = _max;
-  RotaryLib::set_max(_max);
-}
-
-void RotaryLibMulti::set_min(uint16_t _min){
-  p_lev_current->min = _min;
-  RotaryLib::set_min(_min);
-}
-
-void RotaryLibMulti::set_val(uint16_t _val){
-  p_lev_current->val = _val;
-  RotaryLib::set_val(_val);
 }
 
 uint8_t RotaryLibMulti::add_app(){
@@ -174,8 +179,6 @@ uint8_t RotaryLibMulti::add_app(uint16_t _min, uint16_t _max, uint16_t _val){
   //Add a new record for App
   app_t* p_app_search = p_app_initial;
   while (p_app_search->p_app_next) p_app_search = p_app_search->p_app_next;
-  Serial.println(p_app_search->app);
-//  app_t* p_app_new = new app_t;
   app_t* p_app_new = (app_t*)malloc(sizeof(app_t));
   p_app_new->p_app_next = NULL;
   p_app_new->app = app_max;
@@ -184,8 +187,6 @@ uint8_t RotaryLibMulti::add_app(uint16_t _min, uint16_t _max, uint16_t _val){
   //Add a new record for Lev
   lev_t* p_lev_search = p_lev_initial;
   while (p_lev_search->p_lev_next) p_lev_search = p_lev_search->p_lev_next;
-  Serial.println(p_lev_search->app);
-//  lev_t* p_lev_new = new lev_t;
   lev_t* p_lev_new = (lev_t*)malloc(sizeof(lev_t));
   p_lev_new->p_lev_next = NULL;
   p_lev_new->app = app_max;
@@ -210,7 +211,6 @@ uint8_t RotaryLibMulti::add_lev(uint8_t _app, uint16_t _min, uint16_t _max, uint
     p_app_search = p_app_search->p_app_next;
   }
   p_app_search->max_lev = p_app_search->max_lev +1;
-  Serial.println(p_app_search->max_lev);
   //Add a new record for Lev
   lev_t* p_lev_search = p_lev_initial;
   while (p_lev_search->p_lev_next) p_lev_search = p_lev_search->p_lev_next;
@@ -222,65 +222,83 @@ uint8_t RotaryLibMulti::add_lev(uint8_t _app, uint16_t _min, uint16_t _max, uint
   p_lev_new->max = _max;
   p_lev_new->val = _val;
   p_lev_search->p_lev_next = p_lev_new;
-  Serial.println(p_app_search->max_lev);
   return p_app_search->max_lev;
 }
 
-void RotaryLibMulti::set(uint8_t _app, uint8_t _lev, uint16_t _min, uint16_t _max, uint16_t _val) {
+bool RotaryLibMulti::set(uint8_t _app, uint8_t _lev, uint16_t _min, uint16_t _max, uint16_t _val) {
   lev_t* p_lev_search = p_lev_initial;
+  bool found = false;
   while (p_lev_search) {
     if (p_lev_search->app == _app && p_lev_search->lev == _lev) {
       p_lev_search->min = _min;
       p_lev_search->max = _max;
       p_lev_search->val = _val;
+      found = true;
     }
     p_lev_search = p_lev_search->p_lev_next;
   }
-
-}
-
-void RotaryLibMulti::set(uint8_t appl, uint8_t level, uint16_t _val) {
-}
-
-void RotaryLibMulti::set(uint16_t _val){
-}
-
-void RotaryLibMulti::set_min(uint8_t appl, uint8_t level, uint16_t min){
-}
-
-void RotaryLibMulti::set_max(uint8_t appl, uint8_t level, uint16_t max){
+  if (_app == p_lev_current->app && _lev == p_lev_current->lev && found) {
+    set_max(_max);
+    set_min(_min);
+    set_val(_val);
+  }
+  return found;
 }
 
 bool RotaryLibMulti::switch_app(uint8_t _app, uint8_t _lev){
-  app_t* p_app_current_tmp = p_app_current;
-  p_app_current = p_app_initial;
   bool found_app = false;
-  while (p_app_current->p_app_next && !found_app) {
-    if (p_app_current->app == _app) found_app = true;
-    if (!found_app) p_app_current = p_app_current->p_app_next;
-  }
-  if (!found_app) p_app_current = p_app_current_tmp;
-  lev_t* p_lev_current_tmp = p_lev_current;
-  p_lev_current = p_lev_initial;
   bool found_lev = false;
-  while (p_lev_current->p_lev_next && !found_lev) {
-    if (p_lev_current->app == _app && p_lev_current->lev == _lev) found_lev = true;
-    if (!found_lev) p_lev_current = p_lev_current->p_lev_next;
+  app_t* p_app_search = p_app_initial;
+  p_lev_current->min = min();
+  p_lev_current->max = max();
+  p_lev_current->val = val();
+  p_app_current = p_app_initial;
+  while (p_app_search && !found_app) {
+    if (p_app_search->app == _app) {
+      found_app = true;
+    } else {
+      p_app_search = p_app_search->p_app_next;
+    }
   }
-  if (!found_lev) p_lev_current = p_lev_current_tmp;
-  return found_lev && found_app;
+  lev_t* p_lev_search = p_lev_initial;
+  while (p_lev_search && !found_lev) {
+    if (p_lev_search->app == _app && p_lev_search->lev == _lev) {
+      found_lev = true;
+    } else {
+      p_lev_search = p_lev_search->p_lev_next;
+    }
+  }
+  if (found_app && found_lev) {
+    p_app_current = p_app_search;
+    p_lev_current = p_lev_search;
+    set_min(p_lev_current->min);
+    set_max(p_lev_current->max);
+    set_val(p_lev_current->val);
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool RotaryLibMulti::switch_lev(uint8_t _lev){
+  bool found = false;
   uint8_t _app = p_lev_current->app;
   lev_t* p_lev_current_tmp = p_lev_current;
+  p_lev_current->min = min();
+  p_lev_current->max = max();
+  p_lev_current->val = val();
   p_lev_current = p_lev_initial;
-  bool found = false;
   while (p_lev_current->p_lev_next && !found) {
     if (p_lev_current->app == _app && p_lev_current->lev == _lev) found = true;
     if (!found) p_lev_current = p_lev_current->p_lev_next;
   }
-  if (!found) p_lev_current = p_lev_current_tmp;
+  if (found) {
+    set_min(p_lev_current->min);
+    set_max(p_lev_current->max);
+    set_val(p_lev_current->val);
+  } else {
+    p_lev_current = p_lev_current_tmp;
+  }
   return found;
 }
 
@@ -290,11 +308,6 @@ uint8_t RotaryLibMulti::lev(){
 
 uint8_t RotaryLibMulti::app(){
   return p_lev_current->app;
-}
-
-uint8_t RotaryLibMulti::val(){
-  //return p_lev_current->val;
-  return RotaryLib::val();
 }
 
 uint8_t RotaryLibMulti::max_lev(){

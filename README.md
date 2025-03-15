@@ -8,4 +8,6 @@ Project status:
 The rotary itself seem to be OK. See examples how to use.
 class RotaryLib => running and testing now.
 
-class RotaryLibMulti => NOT running => do not use
+class RotaryLibMulti => Still in early state
+
+Version 0.0.2

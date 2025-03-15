@@ -15,6 +15,8 @@ public:
     void begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw);
     void read();
     bool valChanged = false;
+    uint16_t max();
+    uint16_t min();
     uint16_t val();
     void set_max(uint16_t _max);
     void set_min(uint16_t _min);
@@ -44,6 +46,8 @@ public:
     uint8_t  dir_cnt_l;
     uint16_t rot_val;
     uint16_t rot_val_tol;
+    uint16_t rot_shift;
+    uint16_t rot_divider;
     uint16_t rot_val_old;
     uint16_t rot_max;
     uint16_t rot_min;
@@ -58,26 +62,16 @@ class RotaryLibMulti : public RotaryLib {
 
 public:
     void begin(uint8_t pin_a, uint8_t pin_b, uint8_t pin_sw);
-    void set_max_val(uint16_t max_val);
-    void set_min_val(uint16_t min_val);
-    void set_val(uint16_t val);
-    void add(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t cur);
+    void add(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t val);
     uint8_t add_app();
-    uint8_t add_app(uint16_t min, uint16_t max, uint16_t cur);
+    uint8_t add_app(uint16_t min, uint16_t max, uint16_t val);
     uint8_t add_lev(uint8_t app);
-    uint8_t add_lev(uint8_t app, uint16_t min, uint16_t max, uint16_t cur);
-    void set(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t cur);
-    void set(uint8_t app, uint8_t lev, uint16_t cur);
-    void set(uint16_t cur);
-    void set_min(uint8_t app, uint8_t lev, uint16_t min);
-    void set_min(uint16_t min);
-    void set_max(uint8_t app, uint8_t lev, uint16_t max);
-    void set_max(uint16_t max);
+    uint8_t add_lev(uint8_t app, uint16_t min, uint16_t max, uint16_t val);
+    bool set(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t val);
     bool switch_app(uint8_t app, uint8_t lev);
     bool switch_lev(uint8_t lev);
     uint8_t app();
     uint8_t lev();
-    uint8_t val();
     uint8_t max_app();
     uint8_t max_lev();
 
@@ -100,8 +94,6 @@ private:
     lev_t * p_lev_initial;
     lev_t * p_lev_current;
     uint8_t app_max;
-    uint8_t app_cur;
-    uint8_t lev_cur;
 };
 
 

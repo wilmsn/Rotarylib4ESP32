@@ -1,9 +1,20 @@
-RotaryLib	      KEYWORD1
+RotaryLib	  KEYWORD1
 begin	          KEYWORD2
 read	          KEYWORD2
+max               KEYWORD2
 set_max	          KEYWORD2
+min               KEYWORD2
 set_min	          KEYWORD2
 set_val	          KEYWORD2
-val	              KEYWORD2
+val	          KEYWORD2
 buttonChanged	  LITERAL1
-valChanged	      LITERAL1
+buttonState       LITERAL1
+valChanged	  LITERAL2
+lev               KEYWORD2
+max_lev           KEYWORD2
+switch_lev        KEYWORD2
+RotaryLibMulti    KEYWORD1
+app               KEYWORD2
+max_app           KEYWORD2
+switch_app        KEYWORD2
+

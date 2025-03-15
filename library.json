@@ -1,6 +1,6 @@
 {
 	"name": "Rotarylib4ESP32",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"keywords": "rotary encoder, esp32",
 	"description": "ESP32/Arduino Library for reading rotary encoder values.",
 	"homepage": "https://github.com/wilmsn/Rotarylib4ESP32",
