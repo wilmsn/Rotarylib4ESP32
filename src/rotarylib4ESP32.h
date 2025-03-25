@@ -18,14 +18,13 @@ public:
     uint16_t max();
     uint16_t min();
     uint16_t val();
-    void set_max(uint16_t _max);
-    void set_min(uint16_t _min);
-    void set_val(uint16_t _val);
-    bool buttonChanged = false;
-    uint8_t buttonState();
+    void max_set(uint16_t _max);
+    void min_set(uint16_t _min);
+    void val_set(uint16_t _val);
+    bool buttonShortPressed = false;
+    bool buttonLongPressed = false;
 
-
-//private:
+private:
 /// @brief Zeitmessung Rotary Schalter
     unsigned long millis_Button_pressed = 0;
 /// @brief Letzter Zustand Rotary Schalter
@@ -51,7 +50,6 @@ public:
     uint16_t rot_val_old;
     uint16_t rot_max;
     uint16_t rot_min;
-    uint8_t  sw_val;
     unsigned long ts_pin_a;
     unsigned long ts_pin_b;
     void set_val_changed();
@@ -63,17 +61,22 @@ class RotaryLibMulti : public RotaryLib {
 public:
     void begin(uint8_t pin_a, uint8_t pin_b, uint8_t pin_sw);
     void add(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t val);
-    uint8_t add_app();
-    uint8_t add_app(uint16_t min, uint16_t max, uint16_t val);
-    uint8_t add_lev(uint8_t app);
-    uint8_t add_lev(uint8_t app, uint16_t min, uint16_t max, uint16_t val);
+    uint8_t app_add();
+    uint8_t app_add(uint16_t min, uint16_t max, uint16_t val);
+    uint8_t lev_add(uint8_t app);
+    uint8_t lev_add(uint8_t app, uint16_t min, uint16_t max, uint16_t val);
     bool set(uint8_t app, uint8_t lev, uint16_t min, uint16_t max, uint16_t val);
-    bool switch_app(uint8_t app, uint8_t lev);
-    bool switch_lev(uint8_t lev);
+    bool app_set(uint8_t app, uint8_t lev);
+    bool lev_set(uint8_t lev);
+    uint8_t lev_up();
+    uint8_t app_up();
     uint8_t app();
     uint8_t lev();
-    uint8_t max_app();
-    uint8_t max_lev();
+    uint8_t app_max();
+    uint8_t lev_max();
+    void max_set(uint16_t _max);
+    void min_set(uint16_t _min);
+    void val_set(uint16_t _val);
 
 private:
     struct app_t {
@@ -93,7 +96,7 @@ private:
     };
     lev_t * p_lev_initial;
     lev_t * p_lev_current;
-    uint8_t app_max;
+    uint8_t max_app;
 };
 
 

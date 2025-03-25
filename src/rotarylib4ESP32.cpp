@@ -9,6 +9,8 @@ void RotaryLib::begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw) {
   rot_val = 0;
   rot_min = 0;
   rot_max = 0;
+  buttonShortPressed = false;
+  buttonLongPressed = false;
   switch(ROT_SPEEDER) {
     case 0:
       rot_val_tol = 0;
@@ -30,7 +32,6 @@ void RotaryLib::begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw) {
   dir_cnt_h = 0;
   read();
   valChanged = false;
-  buttonChanged = false;
   buttonWasDown = false;
 }
 
@@ -108,12 +109,12 @@ void RotaryLib::read() {
       buttonWasDown = false;
       if (millis() - millis_Button_pressed >= LONG_PRESSED_AFTER_MS) {
 //      long click
-        sw_val = 2;
-        buttonChanged = true;
+        buttonLongPressed = true;
+//        buttonChanged = true;
       } else if (millis() - millis_Button_pressed >= SHORT_PRESSED_AFTER_MS) {
 //      short click => Change Level
-        sw_val = 1;
-        buttonChanged = true;
+        buttonShortPressed = true;
+//        buttonChanged = true;
       }
     }
   }
@@ -131,20 +132,16 @@ uint16_t RotaryLib::max() {
   return rot_max >> rot_shift;
 }
 
-void RotaryLib::set_max(uint16_t _max) {
+void RotaryLib::max_set(uint16_t _max) {
   rot_max = _max << rot_shift;
 }
 
-void RotaryLib::set_min(uint16_t _min) {
+void RotaryLib::min_set(uint16_t _min) {
   rot_min = _min << rot_shift;
 }
 
-void RotaryLib::set_val(uint16_t _val) {
+void RotaryLib::val_set(uint16_t _val) {
   rot_val = _val << rot_shift;
-}
-
-uint8_t RotaryLib::buttonState() {
-  return sw_val;
 }
 
 /**************************************
@@ -168,20 +165,21 @@ void RotaryLibMulti::begin(uint8_t _pin_a, uint8_t _pin_b, uint8_t _pin_sw) {
   p_app_initial->max_lev = 0;
   p_app_initial->p_app_next = NULL;
   p_app_current = p_app_initial;
+  max_app = 0;
 }
 
-uint8_t RotaryLibMulti::add_app(){
-  return add_app(0,0,0);
+uint8_t RotaryLibMulti::app_add(){
+  return app_add(0,0,0);
 }
 
-uint8_t RotaryLibMulti::add_app(uint16_t _min, uint16_t _max, uint16_t _val){
-  app_max++;
+uint8_t RotaryLibMulti::app_add(uint16_t _min, uint16_t _max, uint16_t _val){
+  max_app++;
   //Add a new record for App
   app_t* p_app_search = p_app_initial;
   while (p_app_search->p_app_next) p_app_search = p_app_search->p_app_next;
   app_t* p_app_new = (app_t*)malloc(sizeof(app_t));
   p_app_new->p_app_next = NULL;
-  p_app_new->app = app_max;
+  p_app_new->app = max_app;
   p_app_new->max_lev = 0;
   p_app_search->p_app_next = p_app_new;
   //Add a new record for Lev
@@ -189,20 +187,20 @@ uint8_t RotaryLibMulti::add_app(uint16_t _min, uint16_t _max, uint16_t _val){
   while (p_lev_search->p_lev_next) p_lev_search = p_lev_search->p_lev_next;
   lev_t* p_lev_new = (lev_t*)malloc(sizeof(lev_t));
   p_lev_new->p_lev_next = NULL;
-  p_lev_new->app = app_max;
+  p_lev_new->app = max_app;
   p_lev_new->lev = 0;
   p_lev_new->min = _min;
   p_lev_new->max = _max;
   p_lev_new->val = _val;
   p_lev_search->p_lev_next = p_lev_new;
-  return app_max;
+  return max_app;
 }
 
-uint8_t RotaryLibMulti::add_lev(uint8_t _app){
-  return add_lev(_app,0,0,0);
+uint8_t RotaryLibMulti::lev_add(uint8_t _app){
+  return lev_add(_app,0,0,0);
 }
 
-uint8_t RotaryLibMulti::add_lev(uint8_t _app, uint16_t _min, uint16_t _max, uint16_t _val){
+uint8_t RotaryLibMulti::lev_add(uint8_t _app, uint16_t _min, uint16_t _max, uint16_t _val){
   //Find the app record
   app_t* p_app_search = p_app_initial;
   bool found = false;
@@ -238,14 +236,14 @@ bool RotaryLibMulti::set(uint8_t _app, uint8_t _lev, uint16_t _min, uint16_t _ma
     p_lev_search = p_lev_search->p_lev_next;
   }
   if (_app == p_lev_current->app && _lev == p_lev_current->lev && found) {
-    set_max(_max);
-    set_min(_min);
-    set_val(_val);
+    RotaryLib::max_set(_max);
+    RotaryLib::min_set(_min);
+    RotaryLib::val_set(_val);
   }
   return found;
 }
 
-bool RotaryLibMulti::switch_app(uint8_t _app, uint8_t _lev){
+bool RotaryLibMulti::app_set(uint8_t _app, uint8_t _lev){
   bool found_app = false;
   bool found_lev = false;
   app_t* p_app_search = p_app_initial;
@@ -271,16 +269,16 @@ bool RotaryLibMulti::switch_app(uint8_t _app, uint8_t _lev){
   if (found_app && found_lev) {
     p_app_current = p_app_search;
     p_lev_current = p_lev_search;
-    set_min(p_lev_current->min);
-    set_max(p_lev_current->max);
-    set_val(p_lev_current->val);
+    RotaryLib::min_set(p_lev_current->min);
+    RotaryLib::max_set(p_lev_current->max);
+    RotaryLib::val_set(p_lev_current->val);
     return true;
   } else {
     return false;
   }
 }
 
-bool RotaryLibMulti::switch_lev(uint8_t _lev){
+bool RotaryLibMulti::lev_set(uint8_t _lev){
   bool found = false;
   uint8_t _app = p_lev_current->app;
   lev_t* p_lev_current_tmp = p_lev_current;
@@ -293,13 +291,45 @@ bool RotaryLibMulti::switch_lev(uint8_t _lev){
     if (!found) p_lev_current = p_lev_current->p_lev_next;
   }
   if (found) {
-    set_min(p_lev_current->min);
-    set_max(p_lev_current->max);
-    set_val(p_lev_current->val);
+    RotaryLib::min_set(p_lev_current->min);
+    RotaryLib::max_set(p_lev_current->max);
+    RotaryLib::val_set(p_lev_current->val);
   } else {
     p_lev_current = p_lev_current_tmp;
   }
   return found;
+}
+
+void RotaryLibMulti::max_set(uint16_t _max) {
+  p_lev_current->max = _max;
+  RotaryLib::max_set(p_lev_current->max);
+}
+
+void RotaryLibMulti::min_set(uint16_t _min) {
+  p_lev_current->min = _min;
+  RotaryLib::min_set(p_lev_current->min);
+}
+
+void RotaryLibMulti::val_set(uint16_t _val) {
+  p_lev_current->val = _val;
+  RotaryLib::val_set(p_lev_current->val);
+}
+
+uint8_t RotaryLibMulti::lev_up(){
+  if (lev() < lev_max()) {
+    lev_set(lev()+1);
+  } else {
+    lev_set(0);
+  }
+  return lev();
+}
+
+uint8_t RotaryLibMulti::app_up(){
+  if (app() < app_max()) {
+    app_set(app()+1,0);
+  } else {
+    app_set(0,0);
+  }
 }
 
 uint8_t RotaryLibMulti::lev(){
@@ -310,10 +340,10 @@ uint8_t RotaryLibMulti::app(){
   return p_lev_current->app;
 }
 
-uint8_t RotaryLibMulti::max_lev(){
+uint8_t RotaryLibMulti::lev_max(){
   return p_app_current->max_lev;
 }
 
-uint8_t RotaryLibMulti::max_app(){
-  return app_max;
+uint8_t RotaryLibMulti::app_max(){
+  return max_app;
 }
