@@ -79,6 +79,9 @@ public:
     void val_set(uint16_t _val);
 
 private:
+    void set_val_changed();
+    void reset_dir_cnt();
+
     struct app_t {
         uint8_t  app;
         uint8_t  max_lev;

@@ -316,19 +316,31 @@ void RotaryLibMulti::val_set(uint16_t _val) {
 }
 
 uint8_t RotaryLibMulti::lev_up(){
+  bool success = false;
   if (lev() < lev_max()) {
-    lev_set(lev()+1);
+    if (lev_set(lev()+1)) success = true;;
   } else {
-    lev_set(0);
+    if (lev_set(0)) success = true;
   }
-  return lev();
+  if (success) {
+    return lev();
+  } else {
+    return 255;
+  }
 }
 
 uint8_t RotaryLibMulti::app_up(){
+  bool success = false;
+  lev_set(0);
   if (app() < app_max()) {
-    app_set(app()+1,0);
+    if (app_set(app()+1,0)) success = true;
   } else {
-    app_set(0,0);
+    if (app_set(0,0)) success = true;
+  }
+  if (success) {
+    return app();
+  } else {
+    return 255;
   }
 }
 
